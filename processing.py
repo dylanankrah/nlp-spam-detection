@@ -30,32 +30,33 @@ def Format(dataset):
     dataset['length'] = dataset['SMS'].apply(len) # on peut rajouter une feature "longueur du message", la corrélation est possible à priori
     # dataset['label'] = dataset['label'].map({'ham': 0, 'spam': 1}, inplace=True) # on convertit les catégories ham/spam en 0/1 (optionnel)
     
+    
 # --- Visualisation pre/post
 
-def VHistogram(dataset):
+def VizHistogram(dataset):
     """
     Renvoie un histogramme des répartitions en longueur des messages, puis par ham/spam
     """
     dataset['length'].plot(bins=100, kind='hist', cmap='coolwarm') # histogramme: répartition en longueur
     dataset.hist(column='length', by='label', bins=100, figsize=(12,4)) # histogramme: idem, par catégorie
     
-def VWordCloud(dataset):
+def VizWordCloud(dataset,cat):
     """
-    Génération du wordcloud catégorie spam
+    Génération du wordcloud selon la catégorie
     """
-    spamWords = ' '.join(list(dataset[dataset['label'] == 'spam']['SMS']))
-    spamWordCloud = WordCloud(width=512, height=512).generate(spamWords)
+    words = ' '.join(list(dataset[dataset['label'] == cat]['SMS']))
+    wordCloud = WordCloud(width=512, height=512).generate(words)
     plt.figure(figsize=(10,8), facecolor='k')
-    plt.imshow(spamWordCloud)
+    plt.imshow(wordCloud)
     plt.axis('off')
     plt.tight_layout(pad=0)
     plt.show()
     
-def VReport(clreport, cm, ax):
+def VizReport(clreport, cm, ax):
     """
-    Affiche le classification_report et plot une confusion matrix
+    Affiche le classification_report et une confusion matrix
     """
-    print(clreport)
+    print(clreport) # renvoie les scores type accuracy, recall, f1
     dfCM = pd.DataFrame(cm, index=[['actual','actual'],['ham','spam']], columns=[['predicted','predicted'],['ham','spam']])
     sn.heatmap(dfCM, annot=True, annot_kws={"size": 16}, fmt='g', ax=ax)
     
@@ -80,6 +81,8 @@ def Predict(dataset, model='NB'):
         - On convertit les messages en un bag-of-words (ligne = mot unique, colonne = message, 0/1) (comptage)
         - On convertit le BOW en une matrice TF-IDF (pondération)
         - On utilisera un modèle type Naive Bayes par défaut.
+        
+    Renvoie un array [liste des prédicitons, liste des vrais labels], un classification_report et une confusion matrix
     """
     smsTrain, smsTest, labelTrain, labelTest = train_test_split(dataset['SMS'], dataset['label'], test_size=0.25) # splitting
     
@@ -100,12 +103,10 @@ def Predict(dataset, model='NB'):
     
     pipeline.fit(smsTrain, labelTrain) # fitting
     predictions = pipeline.predict(smsTest) # prédiction
-    
-    # print(classification_report(predictions, labelTest)) # renvoie les scores type accuracy, recall, f1
-    
     predVStrue = [predictions,labelTest]
     
     return(predVStrue, classification_report(predictions, labelTest), confusion_matrix(labelTest,predictions))
+    
     
 # --- Export en CSV
     
